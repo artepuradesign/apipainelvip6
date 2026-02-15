@@ -1,6 +1,8 @@
 <?php
 // update_expiry.php - Reativar validade de QR Code RG
-// Conecta diretamente ao banco u617342185_qrcode
+// Conecta ao banco u617342185_qrcode via db.php
+
+require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -43,15 +45,6 @@ if (!in_array($months, [1, 3, 6])) {
 }
 
 try {
-    // Conexão mysqli ao banco de QR Codes (mesmo formato do db.php original)
-    $conn = new mysqli('45.151.120.2', 'u617342185_userapipainel2', 'Acerola@2025', 'u617342185_qrcode');
-    
-    if ($conn->connect_error) {
-        throw new Exception("Erro de conexão com banco qrcode: " . $conn->connect_error);
-    }
-    
-    $conn->set_charset("utf8mb4");
-
     // Buscar registro atual
     $stmt = $conn->prepare("SELECT id, expiry_date, validation FROM registrations WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -63,7 +56,6 @@ try {
     if (!$registration) {
         http_response_code(404);
         echo json_encode(["error" => "Registro não encontrado"]);
-        $conn->close();
         exit;
     }
 
@@ -110,6 +102,6 @@ try {
 } catch (Exception $e) {
     error_log(date('[Y-m-d H:i:s] ') . "Update expiry error: " . $e->getMessage() . "\n", 3, __DIR__ . "/error.log");
     http_response_code(500);
-    echo json_encode(["error" => "Erro interno do servidor: " . $e->getMessage()]);
+    echo json_encode(["error" => "Erro interno do servidor"]);
 }
 ?>
