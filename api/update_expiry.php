@@ -1,6 +1,5 @@
 <?php
-// update_expiry.php - Reativar validade de QR Code RG
-// Conecta ao banco u617342185_qrcode (separado do banco principal)
+require_once 'db.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -43,17 +42,13 @@ if (!in_array($months, [1, 3, 6])) {
 }
 
 try {
-    // Conexão PDO ao banco de QR Codes
-    $dsn = "mysql:host=45.151.120.2;dbname=u617342185_qrcode;charset=utf8mb4";
-    $conn = new PDO($dsn, 'u617342185_userapipainel2', 'Acerola@2025', [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-
     // Buscar registro atual
     $stmt = $conn->prepare("SELECT id, expiry_date, validation FROM registrations WHERE id = ?");
-    $stmt->execute([$id]);
-    $registration = $stmt->fetch();
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $registration = $result->fetch_assoc();
+    $stmt->close();
 
     if (!$registration) {
         http_response_code(404);
@@ -77,7 +72,9 @@ try {
 
     // Atualizar data de validade e reativar validação
     $updateStmt = $conn->prepare("UPDATE registrations SET expiry_date = ?, validation = 'valid' WHERE id = ?");
-    $success = $updateStmt->execute([$newExpiry, $id]);
+    $updateStmt->bind_param("si", $newExpiry, $id);
+    $success = $updateStmt->execute();
+    $updateStmt->close();
 
     if ($success) {
         echo json_encode([
@@ -87,9 +84,7 @@ try {
                 "id" => $id,
                 "new_expiry_date" => $newExpiry,
                 "months_added" => $months,
-                "validation" => "valid",
-                "previous_expiry" => $registration['expiry_date'],
-                "cumulative" => ($currentExpiry > $now)
+                "validation" => "valid"
             ]
         ]);
     } else {
@@ -98,8 +93,10 @@ try {
     }
 
 } catch (Exception $e) {
-    error_log(date('[Y-m-d H:i:s] ') . "Update expiry error: " . $e->getMessage());
+    error_log(date('[Y-m-d H:i:s] ') . "Update expiry error: " . $e->getMessage() . "\n", 3, __DIR__ . "/error.log");
     http_response_code(500);
-    echo json_encode(["error" => "Erro interno do servidor: " . $e->getMessage()]);
+    echo json_encode(["error" => "Erro interno do servidor"]);
 }
+
+$conn->close();
 ?>
