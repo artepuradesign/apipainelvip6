@@ -17,6 +17,7 @@ import ModuleCardTemplates from '@/components/configuracoes/personalization/Modu
 import ModuleGridWrapper from '@/components/configuracoes/personalization/ModuleGridWrapper';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useModuleRecords } from '@/hooks/useModuleRecords';
 
 interface PanelsGridProps {
   activePanels: Panel[];
@@ -36,6 +37,7 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
   const { selectedTemplate } = useModuleTemplate();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { hasRecordsInModule } = useModuleRecords();
   
   // Obter plano atual (subscription > planInfo > fallback em localStorage)
   // Importante: parênteses para evitar precedência incorreta entre `||` e ternário.
@@ -153,7 +155,10 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
           : Math.max(originalPrice - (originalPrice * effectiveDiscountPercentage) / 100, 0.01))
       : originalPrice;
     
-    if (totalAvailableBalance < finalPrice) {
+    const moduleRoute = getModulePageRoute(module);
+    const userHasRecords = hasRecordsInModule(moduleRoute);
+
+    if (totalAvailableBalance < finalPrice && !userHasRecords) {
       toast.error(
         `Saldo insuficiente para ${module.title}! Valor necessário: R$ ${finalPrice.toFixed(2)}`,
         {
@@ -236,6 +241,9 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
                      willShowDiscountPercentage: shouldShowDiscount ? effectiveDiscountPercentage : undefined
                   });
                   
+                  const moduleRoute = getModulePageRoute(module);
+                  const userHasRecordsInThis = hasRecordsInModule(moduleRoute);
+
                    return (
                     <div key={module.id} className={`relative cursor-pointer group ${isMobile ? 'mb-0' : ''}`} onClick={() => handleModuleClick(module)}>
                       <ModuleCardTemplates
@@ -257,8 +265,8 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
                       />
                       
                       
-                      {/* Overlay para saldo insuficiente - aparece sobre o card */}
-                      {hasLoadedOnce && !isBalanceLoading && totalAvailableBalance < finalDiscountedPrice && (
+                      {/* Overlay para saldo insuficiente - não exibir se usuário já tem registros no módulo */}
+                      {hasLoadedOnce && !isBalanceLoading && totalAvailableBalance < finalDiscountedPrice && !userHasRecordsInThis && (
                         <div className="absolute inset-0 bg-black/60 dark:bg-black/70 rounded-lg z-50 flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <div className="text-center text-white bg-black/80 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20 shadow-2xl w-[85%] max-w-[170px]">
                             <Lock className="h-6 w-6 mx-auto mb-2 text-white" />
