@@ -173,19 +173,13 @@ const QRCodeRgReativar = () => {
     setIsReactivating(true);
 
     try {
-      // 1. Update expiry date on PHP backend
-      const newExpiry = new Date();
-      newExpiry.setMonth(newExpiry.getMonth() + selectedOption.months);
-      const formattedExpiry = newExpiry.toISOString().split('T')[0];
-
+      // 1. Update expiry date on PHP backend (months are added cumulatively)
       const updateResponse = await fetch(`${PHP_VALIDATION_BASE}/update_expiry.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedRegistration.id,
-          token: selectedRegistration.token,
-          expiry_date: formattedExpiry,
-          id_user: user.id
+          months: selectedOption.months
         })
       });
 
