@@ -254,9 +254,10 @@ try {
         require_once __DIR__ . '/../src/routes/module-history.php';
     } elseif (strpos($uri, '/pix-payments') === 0) {
         error_log("ROUTING: Direcionando para PIX Payments");
-        error_log("PIX_PAYMENTS: URI completo = {$uri}");
-        error_log("PIX_PAYMENTS: Método = " . $_SERVER['REQUEST_METHOD']);
         require_once __DIR__ . '/../pix-payments.php';
+    } elseif ($uri === '/update-expiry' || $uri === '/update_expiry') {
+        error_log("ROUTING: Direcionando para Update Expiry (Reativar QR Code)");
+        require_once __DIR__ . '/../update_expiry.php';
     } elseif ($uri === '/' || $uri === '') {
         error_log("ROUTING: Endpoint raiz");
         Response::success([
