@@ -2,7 +2,7 @@
 // update_expiry.php - Reativar validade de QR Code RG
 // Conecta ao banco u617342185_qrcode via db.php
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/config/conexao-qrcode.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
