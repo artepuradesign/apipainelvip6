@@ -174,7 +174,7 @@ const QRCodeRgReativar = () => {
 
     try {
       // 1. Update expiry date on PHP backend (months are added cumulatively)
-      const updateResponse = await fetch(`${PHP_VALIDATION_BASE}/update_expiry.php`, {
+      const updateResponse = await fetch(`https://api.apipainel.com.br/update-expiry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
