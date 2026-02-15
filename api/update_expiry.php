@@ -1,5 +1,6 @@
 <?php
-require_once 'db.php';
+// update_expiry.php - Reativar validade de QR Code RG
+// Conecta ao banco u617342185_qrcode (separado do banco principal)
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -42,13 +43,17 @@ if (!in_array($months, [1, 3, 6])) {
 }
 
 try {
+    // Conexão PDO ao banco de QR Codes
+    $dsn = "mysql:host=45.151.120.2;dbname=u617342185_qrcode;charset=utf8mb4";
+    $conn = new PDO($dsn, 'u617342185_userapipainel2', 'Acerola@2025', [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+
     // Buscar registro atual
     $stmt = $conn->prepare("SELECT id, expiry_date, validation FROM registrations WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $registration = $result->fetch_assoc();
-    $stmt->close();
+    $stmt->execute([$id]);
+    $registration = $stmt->fetch();
 
     if (!$registration) {
         http_response_code(404);
@@ -56,9 +61,7 @@ try {
         exit;
     }
 
-    // Calcular nova data de validade
-    // Se ainda tem dias restantes, soma os meses à data de expiração atual
-    // Se já expirou, soma os meses a partir de hoje
+    // Calcular nova data de validade (cumulativa)
     $currentExpiry = strtotime($registration['expiry_date']);
     $now = time();
     
@@ -74,9 +77,7 @@ try {
 
     // Atualizar data de validade e reativar validação
     $updateStmt = $conn->prepare("UPDATE registrations SET expiry_date = ?, validation = 'valid' WHERE id = ?");
-    $updateStmt->bind_param("si", $newExpiry, $id);
-    $success = $updateStmt->execute();
-    $updateStmt->close();
+    $success = $updateStmt->execute([$newExpiry, $id]);
 
     if ($success) {
         echo json_encode([
@@ -86,7 +87,9 @@ try {
                 "id" => $id,
                 "new_expiry_date" => $newExpiry,
                 "months_added" => $months,
-                "validation" => "valid"
+                "validation" => "valid",
+                "previous_expiry" => $registration['expiry_date'],
+                "cumulative" => ($currentExpiry > $now)
             ]
         ]);
     } else {
@@ -95,12 +98,8 @@ try {
     }
 
 } catch (Exception $e) {
-    $log_path = __DIR__ . "/error.log";
-    error_log(date('[Y-m-d H:i:s] ') . "Update expiry error: " . $e->getMessage() . "\n", 3, $log_path);
-
+    error_log(date('[Y-m-d H:i:s] ') . "Update expiry error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["error" => "Erro interno do servidor"]);
+    echo json_encode(["error" => "Erro interno do servidor: " . $e->getMessage()]);
 }
-
-$conn->close();
 ?>
