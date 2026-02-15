@@ -504,6 +504,14 @@ try {
         exit();
     }
     
+    // Update Expiry - Reativar validade de QR Code
+    if ($endpoint === '/update-expiry' || $endpoint === '/update_expiry' || $endpoint === '/update_expiry.php') {
+        if ($method === 'POST') {
+            include __DIR__ . '/update_expiry.php';
+            exit();
+        }
+    }
+    
     // N8N - Integração Telegram
     if (strpos($endpoint, '/n8n') === 0) {
         error_log("N8N ROUTER: Redirecionando para n8n.php - endpoint: {$endpoint}");
