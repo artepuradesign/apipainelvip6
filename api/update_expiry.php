@@ -56,8 +56,21 @@ try {
         exit;
     }
 
-    // Calcular nova data de validade a partir de hoje
-    $newExpiry = date('Y-m-d H:i:s', strtotime("+{$months} months"));
+    // Calcular nova data de validade
+    // Se ainda tem dias restantes, soma os meses à data de expiração atual
+    // Se já expirou, soma os meses a partir de hoje
+    $currentExpiry = strtotime($registration['expiry_date']);
+    $now = time();
+    
+    if ($currentExpiry > $now) {
+        // Ainda tem validade: adicionar meses à data atual de expiração
+        $baseDate = $registration['expiry_date'];
+    } else {
+        // Já expirou: adicionar meses a partir de hoje
+        $baseDate = date('Y-m-d H:i:s');
+    }
+    
+    $newExpiry = date('Y-m-d H:i:s', strtotime("+{$months} months", strtotime($baseDate)));
 
     // Atualizar data de validade e reativar validação
     $updateStmt = $conn->prepare("UPDATE registrations SET expiry_date = ?, validation = 'valid' WHERE id = ?");
